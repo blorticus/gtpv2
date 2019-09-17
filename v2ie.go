@@ -171,6 +171,83 @@ const (
 	PrivateExtension                                     = 255
 )
 
+var v2IENames = []string{
+	"Reserved", "International Mobile Subscriber Identity (IMSI)", "Cause",
+	"Recovery (Restart Counter)", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"STN-SR", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Access Point Name (APN)", "Aggregate Maximum Bit Rate (AMBR)", "EPS Bearer ID (EBI)",
+	"IP Address", "Mobile Equipment Identity (MEI)", "MSISDN", "Indication",
+	"Protocol Configuration Options (PCO)", "PDN Address Allocation (PAA)",
+	"Bearer Level Quality of Service (Bearer QoS)", "Flow Quality of Service (Flow QoS)",
+	"RAT Type", "Serving Network", "EPS Bearer Level Traffic Flow Template (Bearer TFT)",
+	"Traffic Aggregation Description (TAD)", "User Location Information (ULI)",
+	"Fully Qualified Tunnel Endpoint Identifier (F-TEID)", "TMSI", "Global CN-Id",
+	"S103 PDN Data Forwarding Info (S103PDF)", "S1-U Data Forwarding Info (S1UDF)", "Delay Value",
+	"Bearer Context", "Charging ID", "Charging Characteristics", "Trace Information",
+	"Bearer Flags", "Reserved", "PDN Type", "Procedure Transaction ID",
+	"Reserved", "Reserved",
+	"MM Context (GSM Key and Triplets)", "MM Context (UMTS Key, Used Cipher and Quintuplets)",
+	"MM Context (GSM Key, Used Cipher and Quintuplets)", "MM Context (UMTS Key and Quintuplets)",
+	"MM Context (EPS Security Context, Quadruplets and Quintuplets)",
+	"MM Context (UMTS Key, Quadruplets and Quintuplets)",
+	"PDN Connection", "PDU Numbers", "P-TMSI", "P-TMSI Signature", "Hop Counter",
+	"UE Time Zone", "Trace Reference", "Complete Request Message", "GUTI",
+	"F-Container", "F-Cause", "PLMN ID", "Target Identification", "Reserved",
+	"Packet Flow ID", "RAB Context", "Source RNC PDCP Context Info", "Port Number",
+	"APN Restriction", "Selection Mode", "Source Identification",
+	"Reserved", "Change Reporting Action", "Fully Qualified PDN Connection Set Identifier (FQ-CSID)",
+	"Channel needed", "eMLPP Priority", "Node Type", "Fully Qualified Domain Name (FQDN)",
+	"Transaction Identifier (TI)", "MBMS Session Duration", "MBMS Service Area",
+	"MBMS Session Identifier", "MBMS Flow Identifier", "MBMS IP Multicast Distribution",
+	"MBMS Distribution Acknowledge", "RFSP Index", "User CSG Information (UCI)",
+	"CSG Information Reporting Action", "CSG ID", "CSG Membership Indication (CMI)",
+	"Service indicator", "Detach Type", "Local Distiguished Name (LDN)",
+	"Node Features", "MBMS Time to Data Transfer", "Throttling", "Allocation/Retention Priority (ARP)",
+	"EPC Timer", "Signalling Priority Indication", "Temporary Mobile Group Identity (TMGI)",
+	"Additional MM context for SRVCC", "Additional flags for SRVCC", "Reserved",
+	"MDT Configuration", "Additional Protocol Configuration Options (APCO)",
+	"Absolute Time of MBMS Data Transfer", "H(e)NB Information Reporting ",
+	"IPv4 Configuration Parameters (IP4CP)", "Change to Report Flags",
+	"Action Indication", "TWAN Identifier", "ULI Timestamp", "MBMS Flags", "RAN/NAS Cause",
+	"CN Operator Selection Entity", "Trusted WLAN Mode Indication", "Node Number",
+	"Node Identifier", "Presence Reporting Area Action", "Presence Reporting Area Information",
+	"TWAN Identifier Timestamp", "Overload Control Information", "Load Control Information",
+	"Metric", "Sequence Number", "APN and Relative Capacity", "WLAN Offloadability Indication",
+	"Paging and Service Information", "Integer Number", "Millisecond Time Stamp",
+	"Monitoring Event Information", "ECGI List", "Remote UE Context", "Remote User ID",
+	"Remote UE IP information", "CIoT Optimizations Support Indication", "SCEF PDN Connection",
+	"Header Compression Configuration", "Extended Protocol Configuration Options (ePCO)",
+	"Serving PLMN Rate Control", "Counter", "Mapped UE Usage Type", "Secondary RAT Usage Data Report",
+	"UP Function Selection Indication Flags", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+	"IE Extension", "Private Extension",
+}
+
+// NameOfV2IEForType returns a string identifier (from TS 29.274 section 8.1) for
+// a GTPv2 IE based on the type integer
+func NameOfV2IEForType(ieType V2IEType) string {
+	return v2IENames[int(ieType)]
+}
+
 // V2IE is a GTPv2 Information Element.  DataLength is the length of just
 // the contained data, in bytes.  TotalLength is the DataLength plus the
 // header length.  InstanceNumber is actually uint4.  Data is the BigEndian
@@ -178,7 +255,7 @@ const (
 type V2IE struct {
 	Type           V2IEType
 	DataLength     uint16
-	TotalLength    uint32
+	TotalLength    uint16
 	InstanceNumber uint8
 	Data           []byte
 }
@@ -188,7 +265,7 @@ type V2IE struct {
 // from stream that are consumed to produce this IE.  Return an error if
 // decoding fails.
 func DecodeV2IE(stream []byte) (*V2IE, error) {
-	if len(stream) > 4 {
+	if len(stream) < 4 {
 		return nil, fmt.Errorf("Insufficient octets in stream for a complete GTPv2 IE")
 	}
 
@@ -198,11 +275,14 @@ func DecodeV2IE(stream []byte) (*V2IE, error) {
 		InstanceNumber: uint8(stream[3]) & 0x0f,
 	}
 
-	ie.TotalLength = uint32(ie.DataLength) + 4
+	ie.TotalLength = ie.DataLength + 4
 
 	if len(stream) < int(ie.TotalLength) {
 		return nil, fmt.Errorf("Next IE length field is (%d), which requires (%d) bytes in stream, but there are only (%d) bytes", ie.DataLength, ie.TotalLength, len(stream))
 	}
 
-	return nil, nil
+	ie.Data = make([]byte, ie.DataLength)
+	copy(ie.Data, stream[4:ie.DataLength+4])
+
+	return ie, nil
 }

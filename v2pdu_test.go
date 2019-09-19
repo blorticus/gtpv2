@@ -6,12 +6,13 @@ import (
 )
 
 type v2PDUComparable struct {
-	testName    string
-	pduOctets   []byte
-	matchingPdu *V2PDU
+	testName     string
+	pduOctets    []byte
+	matchingPdu  *V2PDU
+	piggybackPdu *V2PDU
 }
 
-func TestV2PDUDecodeValidCases(t *testing.T) {
+func TestV2PDUDecodeValidCasesNoPiggyback(t *testing.T) {
 	testCases := []v2PDUComparable{
 		v2PDUComparable{
 			testName: "Valid Modify Bearer Request",
@@ -85,6 +86,94 @@ func TestV2PDUDecodeValidCases(t *testing.T) {
 					},
 				},
 			},
+			piggybackPdu: nil,
+		},
+		v2PDUComparable{
+			testName: "Truncated Modify Bearer Requests Piggybacked with anoth MBR",
+			pduOctets: []byte{
+				// PDU Header
+				0x58, 0x22, 0x00, 0x1e, 0x05, 0x40, 0x3b, 0x2e, 0x00, 0x1a, 0xcc, 0x00,
+				// ULI
+				0x56, 0x00, 0x0d, 0x00, 0x18, 0x00, 0x11, 0x00, 0xff, 0x00, 0x00, 0x11,
+				0x00, 0x0f, 0x42, 0x4d, 0x00,
+				// RATType
+				0x52, 0x00, 0x01, 0x00, 0x06,
+				// Piggybacked PDU Header
+				0x48, 0x22, 0x00, 0x28, 0x05, 0x40, 0x3b, 0x2e, 0x00, 0x1a, 0xcc, 0x00,
+				// Delay Value
+				0x5c, 0x00, 0x01, 0x00, 0x00,
+				// Bearer Context
+				0x5d, 0x00, 0x12, 0x00, 0x49, 0x00, 0x01, 0x00, 0x05, 0x57, 0x00, 0x09,
+				0x00, 0x80, 0xe4, 0x03, 0xfb, 0x94, 0xac, 0x13, 0x01, 0xb2,
+				// Recovery
+				0x03, 0x00, 0x01, 0x00, 0x95,
+			},
+			matchingPdu: &V2PDU{
+				Type:                     ModifyBearerRequest,
+				IsCarryingPiggybackedPDU: true,
+				PriorityFieldIsPresent:   false,
+				TEIDFieldIsPresent:       true,
+				SequenceNumber:           0x00001acc,
+				Priority:                 0,
+				TEID:                     0x05403b2e,
+				TotalLength:              0x0022,
+				InformationElements: []*V2IE{
+					&V2IE{
+						Type:           UserLocationInformation,
+						InstanceNumber: 0,
+						TotalLength:    17,
+						DataLength:     13,
+						Data: []byte{
+							0x18, 0x00, 0x11, 0x00, 0xff, 0x00, 0x00, 0x11,
+							0x00, 0x0f, 0x42, 0x4d, 0x00,
+						},
+					},
+					&V2IE{
+						Type:           RATType,
+						InstanceNumber: 0,
+						TotalLength:    5,
+						DataLength:     1,
+						Data:           []byte{0x06},
+					},
+				},
+			},
+			piggybackPdu: &V2PDU{
+				Type:                     ModifyBearerRequest,
+				IsCarryingPiggybackedPDU: false,
+				PriorityFieldIsPresent:   false,
+				TEIDFieldIsPresent:       true,
+				SequenceNumber:           0x00001acc,
+				Priority:                 0,
+				TEID:                     0x05403b2e,
+				TotalLength:              0x002c,
+				InformationElements: []*V2IE{
+					&V2IE{
+						Type:           DelayValue,
+						InstanceNumber: 0,
+						TotalLength:    5,
+						DataLength:     1,
+						Data:           []byte{0x00},
+					},
+					&V2IE{
+						Type:           BearerContext,
+						InstanceNumber: 0,
+						TotalLength:    22,
+						DataLength:     18,
+						Data: []byte{
+							0x49, 0x00, 0x01, 0x00, 0x05, 0x57, 0x00, 0x09,
+							0x00, 0x80, 0xe4, 0x03, 0xfb, 0x94, 0xac, 0x13,
+							0x01, 0xb2,
+						},
+					},
+					&V2IE{
+						Type:           RecoveryRestartCounter,
+						InstanceNumber: 0,
+						TotalLength:    5,
+						DataLength:     1,
+						Data:           []byte{0x95},
+					},
+				},
+			},
 		},
 	}
 
@@ -96,13 +185,24 @@ func TestV2PDUDecodeValidCases(t *testing.T) {
 			continue
 		}
 
-		if piggybackPdu != nil {
-			t.Errorf("(%s) On decode, received unexpected piggybacked PDU", testCase.testName)
-		}
-
 		if err = compareTwoV2PDUObjects(testCase.matchingPdu, pdu); err != nil {
 			t.Errorf("(%s) %s", testCase.testName, err)
 		}
+
+		if piggybackPdu != nil {
+			if testCase.piggybackPdu == nil {
+				t.Errorf("(%s) On decode, received unexpected piggybacked PDU", testCase.testName)
+			} else {
+				if err = compareTwoV2PDUObjects(testCase.piggybackPdu, piggybackPdu); err != nil {
+					t.Errorf("(%s) piggyback PDU: %s", testCase.testName, err)
+				}
+			}
+		} else {
+			if testCase.piggybackPdu != nil {
+				t.Errorf("(%s) On decode, should have received piggyback PDU, but did not", testCase.testName)
+			}
+		}
+
 	}
 }
 

@@ -12,6 +12,31 @@ type v2PDUComparable struct {
 	piggybackPdu *V2PDU
 }
 
+type v2PDUNamesComparable struct {
+	expectedName string
+	pduType      V2MessageType
+}
+
+func TestPDUNames(t *testing.T) {
+	// This test set is mostly to make sure the list doesn't accidentally
+	// get shifted if values are changed
+	testCases := []v2PDUNamesComparable{
+		v2PDUNamesComparable{"Reserved", 0},
+		v2PDUNamesComparable{"Echo Request", 1},
+		v2PDUNamesComparable{"Create Session Response", 33},
+		v2PDUNamesComparable{"Resume Notification", 164},
+		v2PDUNamesComparable{"Reserved", 172},
+		v2PDUNamesComparable{"Modify Access Bearers Request", 211},
+		v2PDUNamesComparable{"MBMS Session Stop Response", 236},
+	}
+
+	for _, testCase := range testCases {
+		if NameOfV2MessageForType(testCase.pduType) != testCase.expectedName {
+			t.Errorf("For PDU Message Type (%d), expected name = (%s), got = (%s)", testCase.pduType, testCase.expectedName, NameOfV2MessageForType(testCase.pduType))
+		}
+	}
+}
+
 func TestV2PDUDecodeValidCasesNoPiggyback(t *testing.T) {
 	testCases := []v2PDUComparable{
 		v2PDUComparable{

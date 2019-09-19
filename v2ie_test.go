@@ -15,6 +15,30 @@ type v2IEFailCase struct {
 	inputStream []byte
 }
 
+type v2IENamesComparable struct {
+	expectedName string
+	ieType       V2IEType
+}
+
+func TestIENames(t *testing.T) {
+	// This test set is mostly to make sure the list doesn't accidentally
+	// get shifted if values are changed
+	testCases := []v2IENamesComparable{
+		v2IENamesComparable{"Reserved", 0},
+		v2IENamesComparable{"Cause", 2},
+		v2IENamesComparable{"TMSI", 88},
+		v2IENamesComparable{"P-TMSI", 111},
+		v2IENamesComparable{"Throttling", 154},
+		v2IENamesComparable{"UP Function Selection Indication Flags", 202},
+	}
+
+	for _, testCase := range testCases {
+		if got := NameOfV2IEForType(testCase.ieType); got != testCase.expectedName {
+			t.Errorf("For IE type (%d) expected name string = (%s), got = (%s)", testCase.ieType, testCase.expectedName, got)
+		}
+	}
+}
+
 func TestV2IEDecodeInvalidCases(t *testing.T) {
 	cases := []v2IEFailCase{
 		v2IEFailCase{
@@ -113,8 +137,3 @@ func compareTwoV2IEObjects(expected *V2IE, got *V2IE) error {
 
 	return nil
 }
-
-///
-// 0020    5c 00 01 00 00 5d 00 12 00 49 00 01 00 05
-// 0030   57 00 09 00 80 e4 03 fb 94 ac 13 01 b2 03 00 01
-// 0040   00 95

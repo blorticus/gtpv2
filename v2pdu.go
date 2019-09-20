@@ -165,6 +165,92 @@ type V2PDU struct {
 	InformationElements      []*V2IE
 }
 
+// NewV2PDU constructs a new base V2PDU.  It uses a builder pattern to
+// add non-mandatory elements, including a TEID and a priority.  A piggybacked
+// PDU is added at the time of encoding and revealed on decoding.  If you change
+// struct values after construction, Encode() may not operate as expected and may
+// even panic, so the struct values should usually be treated as read-only.
+// This version of the constructor will panic if the length of the IEs exceeds
+// the maximum PDU length.  If you want to be able to catch this condition,
+// construct the PDU struct manually.
+func NewV2PDU(pduType V2MessageType, sequenceNumber uint32, ies []*V2IE) *V2PDU {
+	pduLength := uint32(8)
+
+	for _, ie := range ies {
+		pduLength += uint32(ie.TotalLength)
+	}
+
+	if pduLength > 0xffff {
+		panic("Combined IE lengths exceed maximum PDU length")
+	}
+
+	return &V2PDU{
+		IsCarryingPiggybackedPDU: false,
+		TEIDFieldIsPresent:       false,
+		PriorityFieldIsPresent:   false,
+		Type:                     pduType,
+		TEID:                     0,
+		SequenceNumber:           sequenceNumber,
+		Priority:                 0,
+		InformationElements:      ies,
+		TotalLength:              uint16(pduLength),
+	}
+}
+
+// AddTEID sets the TEID field and the teid presence flag
+func (pdu *V2PDU) AddTEID(teid uint32) *V2PDU {
+	pdu.TEIDFieldIsPresent = true
+	pdu.TEID = teid
+	pdu.TotalLength += 4
+
+	return pdu
+}
+
+// AddPriority sets the priority field and the priority presence flag
+func (pdu *V2PDU) AddPriority(priority uint8) *V2PDU {
+	pdu.PriorityFieldIsPresent = true
+	pdu.Priority = priority & 0x0f
+	return pdu
+}
+
+// Encode encodes the V2PDU as a byte stream in network byte order,
+// suitable for trasmission.
+func (pdu *V2PDU) Encode() []byte {
+	encoded := make([]byte, pdu.TotalLength)
+
+	encoded[0] = 0x40
+	encoded[1] = uint8(pdu.Type)
+	binary.BigEndian.PutUint16(encoded[2:4], pdu.TotalLength-4)
+
+	ieOffsetByteIndex := 0
+
+	if pdu.TEIDFieldIsPresent {
+		encoded[0] |= 0x08
+		binary.BigEndian.PutUint32(encoded[4:8], pdu.TEID)
+		binary.BigEndian.PutUint32(encoded[8:12], pdu.SequenceNumber<<8)
+
+		if pdu.PriorityFieldIsPresent {
+			encoded[0] |= 0x04
+			encoded[11] = pdu.Priority << 4
+		}
+		ieOffsetByteIndex = 12
+	} else {
+		binary.BigEndian.PutUint32(encoded[4:8], pdu.SequenceNumber<<8)
+		ieOffsetByteIndex = 8
+	}
+
+	for _, ie := range pdu.InformationElements {
+		encodedIE := ie.Encode()
+		offsetForEndOfIE := ieOffsetByteIndex + len(encodedIE)
+
+		copy(encoded[ieOffsetByteIndex:offsetForEndOfIE], encodedIE)
+
+		ieOffsetByteIndex = offsetForEndOfIE
+	}
+
+	return encoded
+}
+
 // DecodeV2PDU decodes a stream of bytes that contain either exactly one well-formed
 // GTPv2 PDU, or two GTPv2 PDUs when the piggyback flag on the first is set to true.
 // Returns an error if the stream cannot be decoded into one or two PDUs.

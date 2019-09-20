@@ -37,7 +37,7 @@ func TestPDUNames(t *testing.T) {
 	}
 }
 
-func TestV2PDUDecodeValidCasesNoPiggyback(t *testing.T) {
+func TestV2PDUDecodeValidCases(t *testing.T) {
 	testCases := []v2PDUComparable{
 		v2PDUComparable{
 			testName: "Valid Modify Bearer Request",
@@ -114,7 +114,7 @@ func TestV2PDUDecodeValidCasesNoPiggyback(t *testing.T) {
 			piggybackPdu: nil,
 		},
 		v2PDUComparable{
-			testName: "Truncated Modify Bearer Requests Piggybacked with anoth MBR",
+			testName: "Truncated Modify Bearer Requests Piggybacked with another MBR",
 			pduOctets: []byte{
 				// PDU Header
 				0x58, 0x22, 0x00, 0x1e, 0x05, 0x40, 0x3b, 0x2e, 0x00, 0x1a, 0xcc, 0x00,
@@ -228,6 +228,56 @@ func TestV2PDUDecodeValidCasesNoPiggyback(t *testing.T) {
 			}
 		}
 
+	}
+}
+
+func TestV2PDUEncodeValid(t *testing.T) {
+	testCases := []v2PDUComparable{
+		v2PDUComparable{
+			testName: "Valid Modify Bearer Request",
+			pduOctets: []byte{
+				// PDU Header
+				0x48, 0x22, 0x00, 0x3e, 0x05, 0x40, 0x3b, 0x2e, 0x00, 0x1a, 0xcc, 0x00,
+				// ULI
+				0x56, 0x00, 0x0d, 0x00, 0x18, 0x00, 0x11, 0x00, 0xff, 0x00, 0x00, 0x11,
+				0x00, 0x0f, 0x42, 0x4d, 0x00,
+				// RATType
+				0x52, 0x00, 0x01, 0x00, 0x06,
+				// Delay Value
+				0x5c, 0x00, 0x01, 0x00, 0x00,
+				// Bearer Context
+				0x5d, 0x00, 0x12, 0x00, 0x49, 0x00, 0x01, 0x00, 0x05, 0x57, 0x00, 0x09,
+				0x00, 0x80, 0xe4, 0x03, 0xfb, 0x94, 0xac, 0x13, 0x01, 0xb2,
+				// Recovery
+				0x03, 0x00, 0x01, 0x00, 0x95,
+			},
+			matchingPdu: NewV2PDU(ModifyBearerRequest, 0x00001acc, []*V2IE{
+				NewV2IEWithRawData(UserLocationInformation, []byte{
+					0x18, 0x00, 0x11, 0x00, 0xff, 0x00, 0x00, 0x11, 0x00, 0x0f, 0x42, 0x4d, 0x00,
+				}),
+				NewV2IEWithRawData(RATType, []byte{0x06}),
+				NewV2IEWithRawData(DelayValue, []byte{0x00}),
+				NewV2IEWithRawData(BearerContext, []byte{
+					0x49, 0x00, 0x01, 0x00, 0x05, 0x57, 0x00, 0x09,
+					0x00, 0x80, 0xe4, 0x03, 0xfb, 0x94, 0xac, 0x13,
+					0x01, 0xb2,
+				}),
+				NewV2IEWithRawData(RecoveryRestartCounter, []byte{0x95}),
+			}).AddTEID(0x05403b2e),
+			piggybackPdu: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		encodedPdu := testCase.matchingPdu.Encode()
+
+		if encodedPdu == nil {
+			t.Errorf("On Encode() expected bytes, got nil")
+		} else {
+			if err := compareByteArrays(testCase.pduOctets, encodedPdu); err != nil {
+				t.Errorf("On Encode(): %s", err)
+			}
+		}
 	}
 }
 

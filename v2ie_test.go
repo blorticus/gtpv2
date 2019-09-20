@@ -108,6 +108,52 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 	}
 }
 
+func TestV2IEEncodeValidCases(t *testing.T) {
+	testCases := []v2IEComparable{
+		v2IEComparable{
+			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
+			matchingIE: &V2IE{
+				Type:           UserLocationInformation,
+				DataLength:     13,
+				TotalLength:    17,
+				InstanceNumber: 0,
+				Data:           []byte{0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
+			},
+		},
+		v2IEComparable{
+			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
+			matchingIE: &V2IE{
+				Type:           RATType,
+				DataLength:     1,
+				TotalLength:    5,
+				InstanceNumber: 3,
+				Data:           []byte{0x06},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		encodedBytes := testCase.matchingIE.Encode()
+		if err := compareByteArrays(testCase.ieOctets, encodedBytes); err != nil {
+			t.Errorf("Encoded() did not generate expected byte stream: %s", err)
+		}
+	}
+}
+
+func compareByteArrays(expected []byte, got []byte) error {
+	if len(expected) != len(got) {
+		return fmt.Errorf("Byte array lengths differ; expected %d bytes, got = %d", len(expected), len(got))
+	}
+
+	for i := 0; i < len(expected); i++ {
+		if expected[i] != got[i] {
+			return fmt.Errorf("At index %d, expected = %02x, got = %02x", i, expected[i], got[i])
+		}
+	}
+
+	return nil
+}
+
 func compareTwoV2IEObjects(expected *V2IE, got *V2IE) error {
 	if expected.Type != got.Type {
 		return fmt.Errorf("Expected IE Type [%d] (%s), got [%d] (%s)", expected.Type, NameOfV2IEForType(expected.Type), got.Type, NameOfV2IEForType(got.Type))

@@ -270,3 +270,49 @@ func DecodeV2IE(stream []byte) (*V2IE, error) {
 
 	return ie, nil
 }
+
+// NewV2IEWithRawData creates a new V2IE, providing it with the data as
+// a raw byte array.  The data are not validated for length or value.
+// The instance number is set to 0, but may be changed directly or as the
+// result of encoding order.  The data are not copied, so if you require
+// that, you must manually copy() the data first.  The data must be in
+// network byte order (i.e., big endian order).  This method panics on
+// an error.  Use NewV2IEWithRawDataErrorable() to make the error catchable.
+func NewV2IEWithRawData(ieType V2IEType, data []byte) *V2IE {
+	ie, err := NewV2IEWithRawDataErrorable(ieType, data)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ie
+}
+
+// NewV2IEWithRawDataErrorable does the same as NewV2IEWithRawData() but
+// returns an error if it occurs, rather than panicing.
+func NewV2IEWithRawDataErrorable(ieType V2IEType, data []byte) (*V2IE, error) {
+	if len(data) > 65535 {
+		return nil, fmt.Errorf("Data length %d exceeds maximum for an Information Element", len(data))
+	}
+
+	return &V2IE{
+		Type:           ieType,
+		InstanceNumber: 0,
+		Data:           data,
+		DataLength:     uint16(len(data)),
+		TotalLength:    uint16(len(data) + 4),
+	}, nil
+}
+
+// Encode encodes the Information Element as a series of
+// bytes in network byte order
+func (ie *V2IE) Encode() []byte {
+	encodedBytes := make([]byte, len(ie.Data)+4)
+
+	encodedBytes[0] = byte(ie.Type)
+	binary.BigEndian.PutUint16(encodedBytes[1:3], uint16(len(ie.Data)))
+	encodedBytes[3] = ie.InstanceNumber & 0x0f
+	copy(encodedBytes[4:], ie.Data)
+
+	return encodedBytes
+}

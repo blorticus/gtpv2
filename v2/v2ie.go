@@ -1,14 +1,14 @@
-package gtp
+package v2
 
 import (
 	"encoding/binary"
 	"fmt"
 )
 
-// V2IEType represents the various IE types for GTPv2
-type V2IEType uint8
+// IEType represents the various IE types for GTPv2
+type IEType uint8
 
-// These represent possible GTPv2 PDU types.  In some cases, includes the
+// These represent possible GTPv2 IE types.  In some cases, includes the
 // full name and its abbreviation (e.g., for IMSI)
 const (
 	InternationalMobileSubscriberIdentity                = 1
@@ -171,7 +171,7 @@ const (
 	PrivateExtension                                     = 255
 )
 
-var v2IENames = []string{
+var ieNames = []string{
 	"Reserved", "International Mobile Subscriber Identity (IMSI)", "Cause", "Recovery (Restart Counter)", "Reserved",
 	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
@@ -226,35 +226,35 @@ var v2IENames = []string{
 	"Private Extension", // 255
 }
 
-// NameOfV2IEForType returns a string identifier (from TS 29.274 section 8.1) for
+// NameOfIEForType returns a string identifier (from TS 29.274 section 8.1) for
 // a GTPv2 IE based on the type integer
-func NameOfV2IEForType(ieType V2IEType) string {
-	return v2IENames[int(ieType)]
+func NameOfIEForType(ieType IEType) string {
+	return ieNames[int(ieType)]
 }
 
-// V2IE is a GTPv2 Information Element.  DataLength is the length of just
+// IE is a GTPv2 Information Element.  DataLength is the length of just
 // the contained data, in bytes.  TotalLength is the DataLength plus the
 // header length.  InstanceNumber is actually uint4.  Data is the BigEndian
 // data bytes.
-type V2IE struct {
-	Type           V2IEType
+type IE struct {
+	Type           IEType
 	DataLength     uint16
 	TotalLength    uint16
 	InstanceNumber uint8
 	Data           []byte
 }
 
-// DecodeV2IE consumes bytes from the start of stream to produce a V2IE.
+// DecodeIE consumes bytes from the start of stream to produce a V2IE.
 // The TotalLength field of the resulting V2IE provides the count of bytes
 // from stream that are consumed to produce this IE.  Return an error if
 // decoding fails.
-func DecodeV2IE(stream []byte) (*V2IE, error) {
+func DecodeIE(stream []byte) (*IE, error) {
 	if len(stream) < 4 {
 		return nil, fmt.Errorf("Insufficient octets in stream for a complete GTPv2 IE")
 	}
 
-	ie := &V2IE{
-		Type:           V2IEType(stream[0]),
+	ie := &IE{
+		Type:           IEType(stream[0]),
 		DataLength:     binary.BigEndian.Uint16(stream[1:3]),
 		InstanceNumber: uint8(stream[3]) & 0x0f,
 	}
@@ -271,15 +271,15 @@ func DecodeV2IE(stream []byte) (*V2IE, error) {
 	return ie, nil
 }
 
-// NewV2IEWithRawData creates a new V2IE, providing it with the data as
+// NewIEWithRawData creates a new V2IE, providing it with the data as
 // a raw byte array.  The data are not validated for length or value.
 // The instance number is set to 0, but may be changed directly or as the
 // result of encoding order.  The data are not copied, so if you require
 // that, you must manually copy() the data first.  The data must be in
 // network byte order (i.e., big endian order).  This method panics on
 // an error.  Use NewV2IEWithRawDataErrorable() to make the error catchable.
-func NewV2IEWithRawData(ieType V2IEType, data []byte) *V2IE {
-	ie, err := NewV2IEWithRawDataErrorable(ieType, data)
+func NewIEWithRawData(ieType IEType, data []byte) *IE {
+	ie, err := NewIEWithRawDataErrorable(ieType, data)
 
 	if err != nil {
 		panic(err)
@@ -288,14 +288,14 @@ func NewV2IEWithRawData(ieType V2IEType, data []byte) *V2IE {
 	return ie
 }
 
-// NewV2IEWithRawDataErrorable does the same as NewV2IEWithRawData() but
+// NewIEWithRawDataErrorable does the same as NewV2IEWithRawData() but
 // returns an error if it occurs, rather than panicing.
-func NewV2IEWithRawDataErrorable(ieType V2IEType, data []byte) (*V2IE, error) {
+func NewIEWithRawDataErrorable(ieType IEType, data []byte) (*IE, error) {
 	if len(data) > 65535 {
 		return nil, fmt.Errorf("Data length %d exceeds maximum for an Information Element", len(data))
 	}
 
-	return &V2IE{
+	return &IE{
 		Type:           ieType,
 		InstanceNumber: 0,
 		Data:           data,
@@ -306,7 +306,7 @@ func NewV2IEWithRawDataErrorable(ieType V2IEType, data []byte) (*V2IE, error) {
 
 // Encode encodes the Information Element as a series of
 // bytes in network byte order
-func (ie *V2IE) Encode() []byte {
+func (ie *IE) Encode() []byte {
 	encodedBytes := make([]byte, len(ie.Data)+4)
 
 	encodedBytes[0] = byte(ie.Type)

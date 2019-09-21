@@ -1,93 +1,93 @@
-package gtp
+package v2
 
 import (
 	"encoding/binary"
 	"fmt"
 )
 
-// V2MessageType represents possible GTPv1 and GTPv2 message type values
-type V2MessageType uint8
+// MessageType represents possible GTPv2 message type values
+type MessageType uint8
 
 // GTPv2 MessageTypes
 const (
-	EchoRequest                                V2MessageType = 1
-	EchoResponse                                             = 2
-	CreateSessionRequest                                     = 32
-	CreateSessionResponse                                    = 33
-	ModifyBearerRequest                                      = 34
-	ModifyBearerResponse                                     = 35
-	DeleteSessionRequest                                     = 36
-	DeleteSessionResponse                                    = 37
-	RemoteUEReportNotification                               = 40
-	RemoteUEReportAcknowlegement                             = 41
-	ChangeNotificationRequest                                = 38
-	ChangeNotificationResponse                               = 39
-	ModifyBearerCommand                                      = 64
-	ModifyBearerFailureIndication                            = 65
-	DeleteBearerCommand                                      = 66
-	DeleteBearerFailureIndication                            = 67
-	BearerResourceCommand                                    = 68
-	BearerResourceFailureIndication                          = 69
-	DownlinkDataNotificationFailureIndication                = 70
-	TraceSessionActivation                                   = 71
-	TraceSessionDeactivation                                 = 72
-	StopPagingIndication                                     = 73
-	CreateBearerRequest                                      = 95
-	CreateBearerResponse                                     = 96
-	UpdateBearerRequest                                      = 97
-	UpdateBearerResponse                                     = 98
-	DeleteBearerRequest                                      = 99
-	DeleteBearerResponse                                     = 100
-	DeletePDNConnectionSetRequest                            = 101
-	DeletePDNConnectionSetResponse                           = 102
-	PGWDownlinkTriggeringNotification                        = 103
-	PGWDownlinkTriggeringAcknowledge                         = 104
-	IdentificationRequest                                    = 128
-	IdentificationResponse                                   = 129
-	ContextRequest                                           = 130
-	ContextResponse                                          = 131
-	ContextAcknowledge                                       = 132
-	ForwardRelocationRequest                                 = 133
-	ForwardRelocationResponse                                = 134
-	ForwardRelocationCompleteNotification                    = 135
-	ForwardRelocationCompleteAcknowledge                     = 136
-	ForwardAccessContextNotification                         = 137
-	ForwardAccessContextAcknowledge                          = 138
-	RelocationCancelRequest                                  = 139
-	RelocationCancelResponse                                 = 140
-	ConfigurationTransferTunnel                              = 141
-	DetachNotification                                       = 149
-	DetachAcknowledge                                        = 150
-	CSPagingIndication                                       = 151
-	RANInformationRelay                                      = 152
-	AlertMMENotification                                     = 153
-	AlertMMEAcknowledge                                      = 154
-	UEActivityNotification                                   = 155
-	UEActivityAcknowledge                                    = 156
-	ISRStatusIndication                                      = 157
-	UERegistrationQueryRequest                               = 158
-	UERegistrationQueryResponse                              = 159
-	CreateForwardingTunnelRequest                            = 160
-	CreateForwardingTunnelResponse                           = 161
-	SuspendNotification                                      = 162
-	SuspendAcknowledge                                       = 163
-	ResumeNotification                                       = 164
-	ResumeAcknowledge                                        = 165
-	CreateIndirectDataForwardingTunnelRequest                = 166
-	CreateIndirectDataForwardingTunnelResponse               = 167
-	DeleteIndirectDataForwardingTunnelRequest                = 168
-	DeleteIndirectDataForwardingTunnelResponse               = 169
-	ReleaseAccessBearersRequest                              = 170
-	ReleaseAccessBearersResponse                             = 171
-	DownlinkDataNotification                                 = 176
-	DownlinkDataNotificationAcknowledge                      = 177
-	PGWRestartNotification                                   = 179
-	PGWRestartNotificationAcknowledge                        = 180
-	UpdatePDNConnectionSetRequest                            = 200
-	UpdatePDNConnectionSetResponse                           = 201
+	EchoRequest                                MessageType = 1
+	EchoResponse                                           = 2
+	CreateSessionRequest                                   = 32
+	CreateSessionResponse                                  = 33
+	ModifyBearerRequest                                    = 34
+	ModifyBearerResponse                                   = 35
+	DeleteSessionRequest                                   = 36
+	DeleteSessionResponse                                  = 37
+	RemoteUEReportNotification                             = 40
+	RemoteUEReportAcknowlegement                           = 41
+	ChangeNotificationRequest                              = 38
+	ChangeNotificationResponse                             = 39
+	ModifyBearerCommand                                    = 64
+	ModifyBearerFailureIndication                          = 65
+	DeleteBearerCommand                                    = 66
+	DeleteBearerFailureIndication                          = 67
+	BearerResourceCommand                                  = 68
+	BearerResourceFailureIndication                        = 69
+	DownlinkDataNotificationFailureIndication              = 70
+	TraceSessionActivation                                 = 71
+	TraceSessionDeactivation                               = 72
+	StopPagingIndication                                   = 73
+	CreateBearerRequest                                    = 95
+	CreateBearerResponse                                   = 96
+	UpdateBearerRequest                                    = 97
+	UpdateBearerResponse                                   = 98
+	DeleteBearerRequest                                    = 99
+	DeleteBearerResponse                                   = 100
+	DeletePDNConnectionSetRequest                          = 101
+	DeletePDNConnectionSetResponse                         = 102
+	PGWDownlinkTriggeringNotification                      = 103
+	PGWDownlinkTriggeringAcknowledge                       = 104
+	IdentificationRequest                                  = 128
+	IdentificationResponse                                 = 129
+	ContextRequest                                         = 130
+	ContextResponse                                        = 131
+	ContextAcknowledge                                     = 132
+	ForwardRelocationRequest                               = 133
+	ForwardRelocationResponse                              = 134
+	ForwardRelocationCompleteNotification                  = 135
+	ForwardRelocationCompleteAcknowledge                   = 136
+	ForwardAccessContextNotification                       = 137
+	ForwardAccessContextAcknowledge                        = 138
+	RelocationCancelRequest                                = 139
+	RelocationCancelResponse                               = 140
+	ConfigurationTransferTunnel                            = 141
+	DetachNotification                                     = 149
+	DetachAcknowledge                                      = 150
+	CSPagingIndication                                     = 151
+	RANInformationRelay                                    = 152
+	AlertMMENotification                                   = 153
+	AlertMMEAcknowledge                                    = 154
+	UEActivityNotification                                 = 155
+	UEActivityAcknowledge                                  = 156
+	ISRStatusIndication                                    = 157
+	UERegistrationQueryRequest                             = 158
+	UERegistrationQueryResponse                            = 159
+	CreateForwardingTunnelRequest                          = 160
+	CreateForwardingTunnelResponse                         = 161
+	SuspendNotification                                    = 162
+	SuspendAcknowledge                                     = 163
+	ResumeNotification                                     = 164
+	ResumeAcknowledge                                      = 165
+	CreateIndirectDataForwardingTunnelRequest              = 166
+	CreateIndirectDataForwardingTunnelResponse             = 167
+	DeleteIndirectDataForwardingTunnelRequest              = 168
+	DeleteIndirectDataForwardingTunnelResponse             = 169
+	ReleaseAccessBearersRequest                            = 170
+	ReleaseAccessBearersResponse                           = 171
+	DownlinkDataNotification                               = 176
+	DownlinkDataNotificationAcknowledge                    = 177
+	PGWRestartNotification                                 = 179
+	PGWRestartNotificationAcknowledge                      = 180
+	UpdatePDNConnectionSetRequest                          = 200
+	UpdatePDNConnectionSetResponse                         = 201
 )
 
-var v2MessageNames = []string{
+var messageNames = []string{
 	"Reserved", "Echo Request", "Echo Response", "Version Not Supported Indication", "Reserved",
 	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 	"Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
@@ -142,30 +142,30 @@ var v2MessageNames = []string{
 	"Reserved", // 255
 }
 
-// NameOfV2MessageForType returns a string identifier (from TS 29.274 section 8.1) for
+// NameOfMessageForType returns a string identifier (from TS 29.274 section 8.1) for
 // a GTPv2 IE based on the type integer
-func NameOfV2MessageForType(msgType V2MessageType) string {
-	return v2MessageNames[int(msgType)]
+func NameOfMessageForType(msgType MessageType) string {
+	return messageNames[int(msgType)]
 }
 
-// V2PDU represents a GTPv2 PDU.  Version field is omitted because it is always '2'.  TEID
+// PDU represents a GTPv2 PDU.  Version field is omitted because it is always '2'.  TEID
 // is set to 0 if TEIDFieldIsPresent is false.  Similarly, Priority is set to 0 if
 // PriorityFieldIsPresent is false.  TotalLength includes complete header length, and body
 // length, but does not include a piggybacked message length if IsCarryingPiggybackedPDU
 // is true.  The SequenceNumber is actually a uint24 value.  Priority is actually a uint4 value
-type V2PDU struct {
+type PDU struct {
 	IsCarryingPiggybackedPDU bool
 	TEIDFieldIsPresent       bool
 	PriorityFieldIsPresent   bool
-	Type                     V2MessageType
+	Type                     MessageType
 	TotalLength              uint16
 	TEID                     uint32
 	SequenceNumber           uint32
 	Priority                 uint8
-	InformationElements      []*V2IE
+	InformationElements      []*IE
 }
 
-// NewV2PDU constructs a new base V2PDU.  It uses a builder pattern to
+// NewPDU constructs a new base GTPv2 PDU.  It uses a builder pattern to
 // add non-mandatory elements, including a TEID and a priority.  A piggybacked
 // PDU is added at the time of encoding and revealed on decoding.  If you change
 // struct values after construction, Encode() may not operate as expected and may
@@ -173,7 +173,7 @@ type V2PDU struct {
 // This version of the constructor will panic if the length of the IEs exceeds
 // the maximum PDU length.  If you want to be able to catch this condition,
 // construct the PDU struct manually.
-func NewV2PDU(pduType V2MessageType, sequenceNumber uint32, ies []*V2IE) *V2PDU {
+func NewPDU(pduType MessageType, sequenceNumber uint32, ies []*IE) *PDU {
 	pduLength := uint32(8)
 
 	for _, ie := range ies {
@@ -184,7 +184,7 @@ func NewV2PDU(pduType V2MessageType, sequenceNumber uint32, ies []*V2IE) *V2PDU 
 		panic("Combined IE lengths exceed maximum PDU length")
 	}
 
-	return &V2PDU{
+	return &PDU{
 		IsCarryingPiggybackedPDU: false,
 		TEIDFieldIsPresent:       false,
 		PriorityFieldIsPresent:   false,
@@ -198,7 +198,7 @@ func NewV2PDU(pduType V2MessageType, sequenceNumber uint32, ies []*V2IE) *V2PDU 
 }
 
 // AddTEID sets the TEID field and the teid presence flag
-func (pdu *V2PDU) AddTEID(teid uint32) *V2PDU {
+func (pdu *PDU) AddTEID(teid uint32) *PDU {
 	pdu.TEIDFieldIsPresent = true
 	pdu.TEID = teid
 	pdu.TotalLength += 4
@@ -207,7 +207,7 @@ func (pdu *V2PDU) AddTEID(teid uint32) *V2PDU {
 }
 
 // AddPriority sets the priority field and the priority presence flag
-func (pdu *V2PDU) AddPriority(priority uint8) *V2PDU {
+func (pdu *PDU) AddPriority(priority uint8) *PDU {
 	pdu.PriorityFieldIsPresent = true
 	pdu.Priority = priority & 0x0f
 	return pdu
@@ -215,7 +215,7 @@ func (pdu *V2PDU) AddPriority(priority uint8) *V2PDU {
 
 // Encode encodes the V2PDU as a byte stream in network byte order,
 // suitable for trasmission.
-func (pdu *V2PDU) Encode() []byte {
+func (pdu *PDU) Encode() []byte {
 	encoded := make([]byte, pdu.TotalLength)
 
 	encoded[0] = 0x40
@@ -251,10 +251,10 @@ func (pdu *V2PDU) Encode() []byte {
 	return encoded
 }
 
-// DecodeV2PDU decodes a stream of bytes that contain either exactly one well-formed
+// DecodePDU decodes a stream of bytes that contain either exactly one well-formed
 // GTPv2 PDU, or two GTPv2 PDUs when the piggyback flag on the first is set to true.
 // Returns an error if the stream cannot be decoded into one or two PDUs.
-func DecodeV2PDU(stream []byte) (pdu *V2PDU, piggybackedPdu *V2PDU, err error) {
+func DecodePDU(stream []byte) (pdu *PDU, piggybackedPdu *PDU, err error) {
 	piggybackedPdu = nil
 
 	if len(stream) < 8 {
@@ -285,7 +285,7 @@ func DecodeV2PDU(stream []byte) (pdu *V2PDU, piggybackedPdu *V2PDU, err error) {
 			return nil, nil, fmt.Errorf("GTPv2 PDU has piggybacked PDU but the piggyback flag for that piggybacked PDU is not 0")
 		}
 
-		piggybackedPdu, _, err = DecodeV2PDU(piggybackedPduStream)
+		piggybackedPdu, _, err = DecodePDU(piggybackedPduStream)
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("On piggybacked PDU: %s", err)
@@ -318,7 +318,7 @@ func DecodeV2PDU(stream []byte) (pdu *V2PDU, piggybackedPdu *V2PDU, err error) {
 		priority = (uint8(stream[11]) & 0xf0) >> 4
 	}
 
-	pdu = &V2PDU{
+	pdu = &PDU{
 		IsCarryingPiggybackedPDU: hasPiggybackedPdu,
 		TEIDFieldIsPresent:       hasTeidField,
 		PriorityFieldIsPresent:   hasPriorityField,
@@ -326,13 +326,13 @@ func DecodeV2PDU(stream []byte) (pdu *V2PDU, piggybackedPdu *V2PDU, err error) {
 		Priority:                 priority,
 		SequenceNumber:           sequenceNumber,
 		TotalLength:              totalPduLength,
-		Type:                     V2MessageType(stream[1]),
+		Type:                     MessageType(stream[1]),
 	}
 
-	ieSet := make([]*V2IE, 0, 10)
+	ieSet := make([]*IE, 0, 10)
 
 	for i := headerLength; i < int(totalPduLength); {
-		nextIEInStream, err := DecodeV2IE(stream[i:])
+		nextIEInStream, err := DecodeIE(stream[i:])
 
 		if err != nil {
 			return nil, nil, err

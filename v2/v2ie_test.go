@@ -1,4 +1,4 @@
-package gtp
+package v2
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 
 type v2IEComparable struct {
 	ieOctets   []byte
-	matchingIE *V2IE
+	matchingIE *IE
 }
 
 type v2IEFailCase struct {
@@ -17,7 +17,7 @@ type v2IEFailCase struct {
 
 type v2IENamesComparable struct {
 	expectedName string
-	ieType       V2IEType
+	ieType       IEType
 }
 
 func TestIENames(t *testing.T) {
@@ -33,7 +33,7 @@ func TestIENames(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		if got := NameOfV2IEForType(testCase.ieType); got != testCase.expectedName {
+		if got := NameOfIEForType(testCase.ieType); got != testCase.expectedName {
 			t.Errorf("For IE type (%d) expected name string = (%s), got = (%s)", testCase.ieType, testCase.expectedName, got)
 		}
 	}
@@ -60,7 +60,7 @@ func TestV2IEDecodeInvalidCases(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		_, err := DecodeV2IE(testCase.inputStream)
+		_, err := DecodeIE(testCase.inputStream)
 
 		if err == nil {
 			t.Errorf("(%s) Expected error on DecodeV2IE(), but received none", testCase.name)
@@ -72,7 +72,7 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 	cases := []v2IEComparable{
 		v2IEComparable{
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
-			matchingIE: &V2IE{
+			matchingIE: &IE{
 				Type:           UserLocationInformation,
 				DataLength:     13,
 				TotalLength:    17,
@@ -82,7 +82,7 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 		},
 		v2IEComparable{
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
-			matchingIE: &V2IE{
+			matchingIE: &IE{
 				Type:           RATType,
 				DataLength:     1,
 				TotalLength:    5,
@@ -95,24 +95,24 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 	testCaseNumber := 0
 	for _, testCase := range cases {
 		testCaseNumber++
-		ie, err := DecodeV2IE(testCase.ieOctets)
+		ie, err := DecodeIE(testCase.ieOctets)
 
 		if err != nil {
 			t.Errorf("For test case number [%d], received error on decode: %s", testCaseNumber, err)
 			continue
 		}
 
-		if err = compareTwoV2IEObjects(testCase.matchingIE, ie); err != nil {
+		if err = compareTwoIEObjects(testCase.matchingIE, ie); err != nil {
 			t.Errorf("For test case number [%d]: %s", testCaseNumber, err)
 		}
 	}
 }
 
-func TestV2IEEncodeValidCases(t *testing.T) {
+func TestIEEncodeValidCases(t *testing.T) {
 	testCases := []v2IEComparable{
 		v2IEComparable{
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
-			matchingIE: &V2IE{
+			matchingIE: &IE{
 				Type:           UserLocationInformation,
 				DataLength:     13,
 				TotalLength:    17,
@@ -122,7 +122,7 @@ func TestV2IEEncodeValidCases(t *testing.T) {
 		},
 		v2IEComparable{
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
-			matchingIE: &V2IE{
+			matchingIE: &IE{
 				Type:           RATType,
 				DataLength:     1,
 				TotalLength:    5,
@@ -154,9 +154,9 @@ func compareByteArrays(expected []byte, got []byte) error {
 	return nil
 }
 
-func compareTwoV2IEObjects(expected *V2IE, got *V2IE) error {
+func compareTwoIEObjects(expected *IE, got *IE) error {
 	if expected.Type != got.Type {
-		return fmt.Errorf("Expected IE Type [%d] (%s), got [%d] (%s)", expected.Type, NameOfV2IEForType(expected.Type), got.Type, NameOfV2IEForType(got.Type))
+		return fmt.Errorf("Expected IE Type [%d] (%s), got [%d] (%s)", expected.Type, NameOfIEForType(expected.Type), got.Type, NameOfIEForType(got.Type))
 	}
 
 	if expected.DataLength != got.DataLength {

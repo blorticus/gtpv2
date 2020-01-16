@@ -143,16 +143,17 @@ var messageNames = []string{
 }
 
 // NameOfMessageForType returns a string identifier (from TS 29.274 section 8.1) for
-// a GTPv2 IE based on the type integer
+// a GTPv2 IE based on the type integer value
 func NameOfMessageForType(msgType MessageType) string {
 	return messageNames[int(msgType)]
 }
 
 // PDU represents a GTPv2 PDU.  Version field is omitted because it is always '2'.  TEID
-// is set to 0 if TEIDFieldIsPresent is false.  Similarly, Priority is set to 0 if
+// should be 0 if TEIDFieldIsPresent is false.  Similarly, Priority should be 0 if
 // PriorityFieldIsPresent is false.  TotalLength includes complete header length, and body
 // length, but does not include a piggybacked message length if IsCarryingPiggybackedPDU
-// is true.  The SequenceNumber is actually a uint24 value.  Priority is actually a uint4 value
+// is true.  The SequenceNumber is actually a uint24 value.  Priority is actually a uint4 value.
+// For these two, upper bits beyond the actual encode size are ignored and should be zero.
 type PDU struct {
 	IsCarryingPiggybackedPDU bool
 	TEIDFieldIsPresent       bool
@@ -177,7 +178,8 @@ func NewPDU(pduType MessageType, sequenceNumber uint32, ies []*IE) *PDU {
 	pduLength := uint32(8)
 
 	for _, ie := range ies {
-		pduLength += uint32(ie.TotalLength)
+		// compute of IE length is data length + 4 bytes for IE header
+		pduLength += uint32(len(ie.Data) + 4)
 	}
 
 	if pduLength > 0xffff {
@@ -213,7 +215,7 @@ func (pdu *PDU) AddPriority(priority uint8) *PDU {
 	return pdu
 }
 
-// Encode encodes the V2PDU as a byte stream in network byte order,
+// Encode encodes the GTPv2 PDU as a byte stream in network byte order,
 // suitable for trasmission.
 func (pdu *PDU) Encode() []byte {
 	encoded := make([]byte, pdu.TotalLength)

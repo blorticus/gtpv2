@@ -243,8 +243,8 @@ type IE struct {
 	Data           []byte
 }
 
-// DecodeIE consumes bytes from the start of stream to produce a V2IE.
-// The TotalLength field of the resulting V2IE provides the count of bytes
+// DecodeIE consumes bytes from the start of stream to produce a GTPv2 IE.
+// The TotalLength field of the resulting IE provides the count of bytes
 // from stream that are consumed to produce this IE.  Return an error if
 // decoding fails.
 func DecodeIE(stream []byte) (*IE, error) {
@@ -271,7 +271,7 @@ func DecodeIE(stream []byte) (*IE, error) {
 	return ie, nil
 }
 
-// NewIEWithRawData creates a new V2IE, providing it with the data as
+// NewIEWithRawData creates a new GTPv2 IE, providing it with the data as
 // a raw byte array.  The data are not validated for length or value.
 // The instance number is set to 0, but may be changed directly or as the
 // result of encoding order.  The data are not copied, so if you require
@@ -304,7 +304,11 @@ func NewIEWithRawDataErrorable(ieType IEType, data []byte) (*IE, error) {
 }
 
 // Encode encodes the Information Element as a series of
-// bytes in network byte order
+// bytes in network byte order.  There is no effort to validate
+// that the IE Data field is correct for the type.  This permits
+// the creation of structurally correct but semantically incorrect.
+// The IE TotalLength field is ignored for encoding and the actual
+// length is recalculated.
 func (ie *IE) Encode() []byte {
 	encodedBytes := make([]byte, len(ie.Data)+4)
 

@@ -238,7 +238,6 @@ func NameOfIEForType(ieType IEType) string {
 // data bytes.
 type IE struct {
 	Type           IEType
-	DataLength     uint16
 	TotalLength    uint16
 	InstanceNumber uint8
 	Data           []byte
@@ -255,18 +254,19 @@ func DecodeIE(stream []byte) (*IE, error) {
 
 	ie := &IE{
 		Type:           IEType(stream[0]),
-		DataLength:     binary.BigEndian.Uint16(stream[1:3]),
 		InstanceNumber: uint8(stream[3]) & 0x0f,
 	}
 
-	ie.TotalLength = ie.DataLength + 4
+	lengthOfIeData := binary.BigEndian.Uint16(stream[1:3])
+
+	ie.TotalLength = lengthOfIeData + 4
 
 	if len(stream) < int(ie.TotalLength) {
-		return nil, fmt.Errorf("Next IE length field is (%d), which requires (%d) bytes in stream, but there are only (%d) bytes", ie.DataLength, ie.TotalLength, len(stream))
+		return nil, fmt.Errorf("Next IE length field is (%d), which requires (%d) bytes in stream, but there are only (%d) bytes", lengthOfIeData, ie.TotalLength, len(stream))
 	}
 
-	ie.Data = make([]byte, ie.DataLength)
-	copy(ie.Data, stream[4:ie.DataLength+4])
+	ie.Data = make([]byte, lengthOfIeData)
+	copy(ie.Data, stream[4:lengthOfIeData+4])
 
 	return ie, nil
 }
@@ -299,7 +299,6 @@ func NewIEWithRawDataErrorable(ieType IEType, data []byte) (*IE, error) {
 		Type:           ieType,
 		InstanceNumber: 0,
 		Data:           data,
-		DataLength:     uint16(len(data)),
 		TotalLength:    uint16(len(data) + 4),
 	}, nil
 }

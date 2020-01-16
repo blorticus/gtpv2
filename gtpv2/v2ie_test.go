@@ -74,7 +74,6 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			matchingIE: &IE{
 				Type:           UserLocationInformation,
-				DataLength:     13,
 				TotalLength:    17,
 				InstanceNumber: 0,
 				Data:           []byte{0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
@@ -84,7 +83,6 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
 			matchingIE: &IE{
 				Type:           RATType,
-				DataLength:     1,
 				TotalLength:    5,
 				InstanceNumber: 3,
 				Data:           []byte{0x06},
@@ -114,7 +112,6 @@ func TestIEEncodeValidCases(t *testing.T) {
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			matchingIE: &IE{
 				Type:           UserLocationInformation,
-				DataLength:     13,
 				TotalLength:    17,
 				InstanceNumber: 0,
 				Data:           []byte{0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
@@ -124,7 +121,6 @@ func TestIEEncodeValidCases(t *testing.T) {
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
 			matchingIE: &IE{
 				Type:           RATType,
-				DataLength:     1,
 				TotalLength:    5,
 				InstanceNumber: 3,
 				Data:           []byte{0x06},
@@ -157,10 +153,6 @@ func compareByteArrays(expected []byte, got []byte) error {
 func compareTwoIEObjects(expected *IE, got *IE) error {
 	if expected.Type != got.Type {
 		return fmt.Errorf("Expected IE Type [%d] (%s), got [%d] (%s)", expected.Type, NameOfIEForType(expected.Type), got.Type, NameOfIEForType(got.Type))
-	}
-
-	if expected.DataLength != got.DataLength {
-		return fmt.Errorf("Expected IE DataLength = %d, got = %d", expected.DataLength, got.DataLength)
 	}
 
 	if expected.TotalLength != got.TotalLength {

@@ -1,3 +1,3 @@
-module github.com/blorticus/gtp-go
+module github.com/blorticus/gtpv2
 
 go 1.13

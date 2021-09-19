@@ -24,12 +24,12 @@ func TestIENames(t *testing.T) {
 	// This test set is mostly to make sure the list doesn't accidentally
 	// get shifted if values are changed
 	testCases := []v2IENamesComparable{
-		v2IENamesComparable{"Reserved", 0},
-		v2IENamesComparable{"Cause", 2},
-		v2IENamesComparable{"TMSI", 88},
-		v2IENamesComparable{"P-TMSI", 111},
-		v2IENamesComparable{"Throttling", 154},
-		v2IENamesComparable{"UP Function Selection Indication Flags", 202},
+		{"Reserved", 0},
+		{"Cause", 2},
+		{"TMSI", 88},
+		{"P-TMSI", 111},
+		{"Throttling", 154},
+		{"UP Function Selection Indication Flags", 202},
 	}
 
 	for _, testCase := range testCases {
@@ -41,19 +41,19 @@ func TestIENames(t *testing.T) {
 
 func TestV2IEDecodeInvalidCases(t *testing.T) {
 	cases := []v2IEFailCase{
-		v2IEFailCase{
+		{
 			name:        "Empty stream",
 			inputStream: []byte{},
 		},
-		v2IEFailCase{
+		{
 			name:        "Stream too short for header",
 			inputStream: []byte{0x01, 0x00, 0x06},
 		},
-		v2IEFailCase{
+		{
 			name:        "Header only",
 			inputStream: []byte{0x01, 0x00, 0x06, 0x00},
 		},
-		v2IEFailCase{
+		{
 			name:        "Insufficient byte stream length",
 			inputStream: []byte{0x01, 0x00, 0x06, 0x00, 0x12, 0x34, 0x56, 0x78},
 		},
@@ -70,7 +70,7 @@ func TestV2IEDecodeInvalidCases(t *testing.T) {
 
 func TestV2IEDecodeValidCases(t *testing.T) {
 	cases := []v2IEComparable{
-		v2IEComparable{
+		{
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			matchingIE: &IE{
 				Type:           UserLocationInformation,
@@ -79,7 +79,7 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 				Data:           []byte{0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			},
 		},
-		v2IEComparable{
+		{
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
 			matchingIE: &IE{
 				Type:           RATType,
@@ -108,7 +108,7 @@ func TestV2IEDecodeValidCases(t *testing.T) {
 
 func TestIEEncodeValidCases(t *testing.T) {
 	testCases := []v2IEComparable{
-		v2IEComparable{
+		{
 			ieOctets: []byte{0x56, 0x00, 0x0d, 0x00, 0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			matchingIE: &IE{
 				Type:           UserLocationInformation,
@@ -117,7 +117,7 @@ func TestIEEncodeValidCases(t *testing.T) {
 				Data:           []byte{0x18, 0x01, 0x00, 0x01, 0xff, 0x00, 0x01, 0x00, 0x01, 0x0f, 0x42, 0x4d, 0x00},
 			},
 		},
-		v2IEComparable{
+		{
 			ieOctets: []byte{0x52, 0x00, 0x01, 0x03, 0x06},
 			matchingIE: &IE{
 				Type:           RATType,

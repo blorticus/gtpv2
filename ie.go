@@ -3,6 +3,7 @@ package gtpv2
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 // IEType represents the various IE types for GTPv2
@@ -318,4 +319,27 @@ func (ie *IE) Encode() []byte {
 	copy(encodedBytes[4:], ie.Data)
 
 	return encodedBytes
+}
+
+// IMSIAsString converts an IMSI as encoded on the wire to a text
+// string of digits
+func IMSIAsString(encodedImsi []byte) string {
+	imsiBytesAsStrings := make([]string, len(encodedImsi)*2)
+
+	for i, imsiByte := range encodedImsi {
+		highNybble := (imsiByte & 0xf0) >> 4
+		lowNybble := imsiByte & 0x0f
+		byteAsString := string(rune(int('0')+int(highNybble))) + string(rune(int('0')+int(lowNybble)))
+		if i%2 == 0 {
+			if i < len(encodedImsi)-1 {
+				imsiBytesAsStrings[i+1] = byteAsString
+			} else {
+				imsiBytesAsStrings[i] = byteAsString
+			}
+		} else {
+			imsiBytesAsStrings[i-1] = byteAsString
+		}
+	}
+
+	return strings.Join(imsiBytesAsStrings, "")
 }

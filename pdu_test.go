@@ -21,13 +21,13 @@ func TestPDUNames(t *testing.T) {
 	// This test set is mostly to make sure the list doesn't accidentally
 	// get shifted if values are changed
 	testCases := []v2PDUNamesComparable{
-		v2PDUNamesComparable{"Reserved", 0},
-		v2PDUNamesComparable{"Echo Request", 1},
-		v2PDUNamesComparable{"Create Session Response", 33},
-		v2PDUNamesComparable{"Resume Notification", 164},
-		v2PDUNamesComparable{"Reserved", 172},
-		v2PDUNamesComparable{"Modify Access Bearers Request", 211},
-		v2PDUNamesComparable{"MBMS Session Stop Response", 236},
+		{"Reserved", 0},
+		{"Echo Request", 1},
+		{"Create Session Response", 33},
+		{"Resume Notification", 164},
+		{"Reserved", 172},
+		{"Modify Access Bearers Request", 211},
+		{"MBMS Session Stop Response", 236},
 	}
 
 	for _, testCase := range testCases {
@@ -39,7 +39,7 @@ func TestPDUNames(t *testing.T) {
 
 func TestPDUDecodeValidCases(t *testing.T) {
 	testCases := []v2PDUComparable{
-		v2PDUComparable{
+		{
 			testName: "Valid Modify Bearer Request",
 			pduOctets: []byte{
 				// PDU Header
@@ -67,7 +67,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 				TEID:                     0x05403b2e,
 				TotalLength:              0x0042,
 				InformationElements: []*IE{
-					&IE{
+					{
 						Type:           UserLocationInformation,
 						InstanceNumber: 0,
 						TotalLength:    17,
@@ -76,19 +76,19 @@ func TestPDUDecodeValidCases(t *testing.T) {
 							0x00, 0x0f, 0x42, 0x4d, 0x00,
 						},
 					},
-					&IE{
+					{
 						Type:           RATType,
 						InstanceNumber: 0,
 						TotalLength:    5,
 						Data:           []byte{0x06},
 					},
-					&IE{
+					{
 						Type:           DelayValue,
 						InstanceNumber: 0,
 						TotalLength:    5,
 						Data:           []byte{0x00},
 					},
-					&IE{
+					{
 						Type:           BearerContext,
 						InstanceNumber: 0,
 						TotalLength:    22,
@@ -98,7 +98,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 							0x01, 0xb2,
 						},
 					},
-					&IE{
+					{
 						Type:           RecoveryRestartCounter,
 						InstanceNumber: 0,
 						TotalLength:    5,
@@ -108,7 +108,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 			},
 			piggybackPdu: nil,
 		},
-		v2PDUComparable{
+		{
 			testName: "Truncated Modify Bearer Requests Piggybacked with another MBR",
 			pduOctets: []byte{
 				// PDU Header
@@ -138,7 +138,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 				TEID:                     0x05403b2e,
 				TotalLength:              0x0022,
 				InformationElements: []*IE{
-					&IE{
+					{
 						Type:           UserLocationInformation,
 						InstanceNumber: 0,
 						TotalLength:    17,
@@ -147,7 +147,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 							0x00, 0x0f, 0x42, 0x4d, 0x00,
 						},
 					},
-					&IE{
+					{
 						Type:           RATType,
 						InstanceNumber: 0,
 						TotalLength:    5,
@@ -165,13 +165,13 @@ func TestPDUDecodeValidCases(t *testing.T) {
 				TEID:                     0x05403b2e,
 				TotalLength:              0x002c,
 				InformationElements: []*IE{
-					&IE{
+					{
 						Type:           DelayValue,
 						InstanceNumber: 0,
 						TotalLength:    5,
 						Data:           []byte{0x00},
 					},
-					&IE{
+					{
 						Type:           BearerContext,
 						InstanceNumber: 0,
 						TotalLength:    22,
@@ -181,7 +181,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 							0x01, 0xb2,
 						},
 					},
-					&IE{
+					{
 						Type:           RecoveryRestartCounter,
 						InstanceNumber: 0,
 						TotalLength:    5,
@@ -223,7 +223,7 @@ func TestPDUDecodeValidCases(t *testing.T) {
 
 func TestPDUEncodeValid(t *testing.T) {
 	testCases := []v2PDUComparable{
-		v2PDUComparable{
+		{
 			testName: "Valid Modify Bearer Request",
 			pduOctets: []byte{
 				// PDU Header

@@ -101,7 +101,7 @@ type GtpDefinitionRootYaml struct {
 
 func validateGtpv2PduYaml(yaml Gtpv2PduYaml) error {
 	if _, providedPduTypeIsValid := mapOfYamlPduTypeToMessageType[yaml.Name]; !providedPduTypeIsValid {
-		return fmt.Errorf("Provided PDU Type (%s) is not recognized", yaml.Name)
+		return fmt.Errorf("provided PDU Type (%s) is not recognized", yaml.Name)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func ReadYamlTemplateFromString(yamlDefinition string) (*Template, error) {
 	}
 
 	if unmarhalledYaml == nil {
-		return nil, fmt.Errorf("Undefined YAML parsing error")
+		return nil, fmt.Errorf("undefined YAML parsing error")
 	}
 
 	mapOfGtpv2PduYamlByName := make(map[string]Gtpv2PduYaml)

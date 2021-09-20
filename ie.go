@@ -1,8 +1,11 @@
 package gtpv2
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
+	"net"
+	"regexp"
 	"strings"
 )
 
@@ -233,6 +236,13 @@ func NameOfIEForType(ieType IEType) string {
 	return ieNames[int(ieType)]
 }
 
+// TypedIE represents any IE that has its encoded value converted
+// to a typed struct
+type TypedIE interface {
+	ToIE() *IE
+	ToIEErrorable() (*IE, error)
+}
+
 // IE is a GTPv2 Information Element.  DataLength is the length of just
 // the contained data, in bytes.  TotalLength is the DataLength plus the
 // header length.  InstanceNumber is actually uint4.  Data is the BigEndian
@@ -250,7 +260,7 @@ type IE struct {
 // decoding fails.
 func DecodeIE(stream []byte) (*IE, error) {
 	if len(stream) < 4 {
-		return nil, fmt.Errorf("Insufficient octets in stream for a complete GTPv2 IE")
+		return nil, fmt.Errorf("insufficient octets in stream for a complete GTPv2 IE")
 	}
 
 	ie := &IE{
@@ -263,7 +273,7 @@ func DecodeIE(stream []byte) (*IE, error) {
 	ie.TotalLength = lengthOfIeData + 4
 
 	if len(stream) < int(ie.TotalLength) {
-		return nil, fmt.Errorf("Next IE length field is (%d), which requires (%d) bytes in stream, but there are only (%d) bytes", lengthOfIeData, ie.TotalLength, len(stream))
+		return nil, fmt.Errorf("next IE length field is (%d), which requires (%d) bytes in stream, but there are only (%d) bytes", lengthOfIeData, ie.TotalLength, len(stream))
 	}
 
 	ie.Data = make([]byte, lengthOfIeData)
@@ -293,7 +303,7 @@ func NewIEWithRawData(ieType IEType, data []byte) *IE {
 // returns an error if it occurs, rather than panicing.
 func NewIEWithRawDataErrorable(ieType IEType, data []byte) (*IE, error) {
 	if len(data) > 65535 {
-		return nil, fmt.Errorf("Data length %d exceeds maximum for an Information Element", len(data))
+		return nil, fmt.Errorf("data length %d exceeds maximum for an Information Element", len(data))
 	}
 
 	return &IE{
@@ -302,6 +312,39 @@ func NewIEWithRawDataErrorable(ieType IEType, data []byte) (*IE, error) {
 		Data:           data,
 		TotalLength:    uint16(len(data) + 4),
 	}, nil
+}
+
+// NewGroupedIE is a convenience method to generate a grouped IE (e.g., BearerContext) from
+// IE sub-elements inside the group.  Panics if an error occurs.
+func NewGroupedIE(ieType IEType, groupedIEs []*IE) *IE {
+	ie, err := NewGroupedIEErrorable(ieType, groupedIEs)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ie
+}
+
+// NewGroupedIEErrorable is the same as NewGroupedIE(), but returns an error if
+// one occurs, rather than panicing.
+func NewGroupedIEErrorable(ieType IEType, groupedIEs []*IE) (*IE, error) {
+	var buffer bytes.Buffer
+	subLength := 0
+
+	for _, ie := range groupedIEs {
+		subLength += int(ie.TotalLength)
+
+		if subLength > 65535 {
+			return nil, fmt.Errorf("data length of Information Element exceeds maximum allowed (65535)")
+		}
+
+		if _, err := buffer.Write(ie.Encode()); err != nil {
+			return nil, fmt.Errorf("binary encoding error: %s", err.Error())
+		}
+	}
+
+	return NewIEWithRawDataErrorable(ieType, buffer.Bytes())
 }
 
 // Encode encodes the Information Element as a series of
@@ -321,25 +364,247 @@ func (ie *IE) Encode() []byte {
 	return encodedBytes
 }
 
-// IMSIAsString converts an IMSI as encoded on the wire to a text
-// string of digits
-func IMSIAsString(encodedImsi []byte) string {
-	imsiBytesAsStrings := make([]string, len(encodedImsi)*2)
+func (ie *IE) TypedDataErrorable() (TypedIE, error) {
+	switch ie.Type {
+	case IMSI:
+		return makeTypedIMSI(ie)
+	case FTEID:
+		return makeTypedFTEID(ie)
 
-	for i, imsiByte := range encodedImsi {
+	default:
+		return nil, fmt.Errorf("no type conversion for IE")
+	}
+}
+
+func ipAddressIsIPv4(ip net.IP) bool {
+	return ip.To4() != nil
+}
+
+func ipAddressIsIPv6(ip net.IP) bool {
+	return ip.To4() == nil
+}
+
+// TypedFTEID is a structured version of an F-TEID IE
+type TypedFTEID struct {
+	IPv4Addr      net.IP
+	IPv6Addr      net.IP
+	InterfaceType uint8
+	Key           uint32
+}
+
+// ToIE creates an IE from the structured version of an F-TEID, and
+// panics if there is an error
+func (fteid *TypedFTEID) ToIE() *IE {
+	ie, err := fteid.ToIEErrorable()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ie
+}
+
+// ToIEErrorable is the same as ToIE, but returns an error if one
+// occurs, rather than panicing
+func (fteid *TypedFTEID) ToIEErrorable() (*IE, error) {
+	ieFirstRow := byte(0x2f & fteid.InterfaceType)
+
+	ieDataLength := 5
+
+	if fteid.IPv4Addr != nil {
+		if !ipAddressIsIPv4(fteid.IPv4Addr) {
+			return nil, fmt.Errorf("supplied address for F-TEID is not valid IPv4")
+		}
+
+		ieFirstRow |= 0x80
+		ieDataLength += 4
+	}
+
+	if fteid.IPv6Addr != nil {
+		if !ipAddressIsIPv6(fteid.IPv6Addr) {
+			return nil, fmt.Errorf("supplied address for F-TEID is not valid IPv6")
+		}
+
+		ieFirstRow |= 0x40
+		ieDataLength += 16
+	}
+
+	data := make([]byte, 5, ieDataLength)
+
+	data[0] = ieFirstRow
+	binary.BigEndian.PutUint32(data[1:5], fteid.Key)
+
+	if fteid.IPv4Addr != nil {
+		data = append(data, fteid.IPv4Addr.To4()...)
+	}
+
+	if fteid.IPv6Addr != nil {
+		data = append(data, fteid.IPv6Addr.To16()...)
+	}
+
+	return NewIEWithRawDataErrorable(FTEID, data)
+}
+
+func fteidHasIPv4Address(firstByteOfIEData byte) bool {
+	return firstByteOfIEData&0x80 != 0
+}
+
+func fteidHasIPv6Address(firstByteOfIEData byte) bool {
+	return firstByteOfIEData&0x40 != 0
+}
+
+func makeTypedFTEID(fromIE *IE) (*TypedFTEID, error) {
+	if fromIE.Type != FTEID {
+		return nil, fmt.Errorf("supplied IE is not of type F-TEID")
+	}
+
+	data := fromIE.Data
+
+	requiredDataLength := 5
+	if fteidHasIPv4Address(data[0]) {
+		requiredDataLength += 4
+	}
+	if fteidHasIPv6Address(data[0]) {
+		requiredDataLength += 16
+	}
+
+	if len(data) != requiredDataLength {
+		return nil, fmt.Errorf("length of IE data is not correct based on F-TEID flags")
+	}
+
+	fteid := &TypedFTEID{
+		InterfaceType: data[0] & 0x3f,
+		Key:           binary.BigEndian.Uint32(data[1:5]),
+	}
+
+	if fteidHasIPv4Address(data[0]) {
+		fteid.IPv4Addr = net.IP(data[5:9])
+
+		if fteidHasIPv6Address(data[0]) {
+			fteid.IPv6Addr = net.IP(data[9:25])
+		}
+	} else if fteidHasIPv6Address(data[0]) {
+		fteid.IPv6Addr = net.IP(data[5:21])
+	}
+
+	return fteid, nil
+}
+
+// TypedIMSI is a structured version of an IMSI IE
+type TypedIMSI struct {
+	AsString string
+}
+
+// ToIE creates an IE from the structured version of an F-TEID, and
+// panics if there is an error
+func (imsi *TypedIMSI) ToIE() *IE {
+	ie, err := imsi.ToIEErrorable()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ie
+}
+
+var matcherForProperIMSI = regexp.MustCompile(`^\d{1,15}$`)
+
+func stringDigitToByte(digit string) byte {
+	switch digit {
+	case "0":
+		return 0x00
+	case "1":
+		return 0x01
+	case "2":
+		return 0x02
+	case "3":
+		return 0x03
+	case "4":
+		return 0x04
+	case "5":
+		return 0x05
+	case "6":
+		return 0x06
+	case "7":
+		return 0x07
+	case "8":
+		return 0x08
+	case "9":
+		return 0x09
+	default:
+		return 0x00
+	}
+}
+
+// ToIEErrorable is the same as ToIE, but returns an error if one
+// occurs, rather than panicing
+func (imsi *TypedIMSI) ToIEErrorable() (*IE, error) {
+	if !matcherForProperIMSI.MatchString(imsi.AsString) {
+		return nil, fmt.Errorf("invalid format for IMSI string")
+	}
+
+	// encoding requires that last nyble is 1111b if there is an odd number of digits in IMSI
+	data := make([]byte, 0, (len(imsi.AsString)/2 + (len(imsi.AsString) % 2)))
+
+	imsiAsSequence := strings.Split(imsi.AsString, "")
+
+	if len(imsiAsSequence)%2 == 0 {
+		for i := 0; i < len(imsiAsSequence); i += 2 {
+			encodedByte := (stringDigitToByte(imsiAsSequence[i+1]) << 4) | stringDigitToByte(imsiAsSequence[i])
+			data = append(data, encodedByte)
+		}
+	} else {
+		for i := 0; i < len(imsiAsSequence)-1; i += 2 {
+			encodedByte := (stringDigitToByte(imsiAsSequence[i+1]) << 4) | stringDigitToByte(imsiAsSequence[i])
+			data = append(data, encodedByte)
+		}
+
+		encodedByte := 0xf0 | stringDigitToByte(imsiAsSequence[len(imsiAsSequence)-1])
+		data = append(data, encodedByte)
+	}
+
+	return NewIEWithRawData(IMSI, data), nil
+}
+
+func makeTypedIMSI(fromIE *IE) (*TypedIMSI, error) {
+	if fromIE.Type != IMSI {
+		return nil, fmt.Errorf("supplied IE is not of type IMSI")
+	}
+
+	if len(fromIE.Data) > 8 {
+		return nil, fmt.Errorf("length of IE data is not correct for IMSI type")
+	}
+
+	var imsiBytesAsStrings []string
+
+	imsiBytesAsStrings = make([]string, 0, len(fromIE.Data))
+
+	for i, imsiByte := range fromIE.Data {
 		highNybble := (imsiByte & 0xf0) >> 4
-		lowNybble := imsiByte & 0x0f
-		byteAsString := string(rune(int('0')+int(highNybble))) + string(rune(int('0')+int(lowNybble)))
-		if i%2 == 0 {
-			if i < len(encodedImsi)-1 {
-				imsiBytesAsStrings[i+1] = byteAsString
-			} else {
-				imsiBytesAsStrings[i] = byteAsString
+
+		if highNybble == 0x0f {
+			if i < len(fromIE.Data)-1 {
+				return nil, fmt.Errorf("invalid IMSI ecnode value")
 			}
+		} else if highNybble > 9 {
+			return nil, fmt.Errorf("invalid IMSI ecnode value")
+		}
+
+		lowNybble := imsiByte & 0x0f
+		if lowNybble > 9 {
+			return nil, fmt.Errorf("invalid IMSI encode value")
+		}
+
+		if highNybble == 0x0f {
+			imsiBytesAsStrings = append(imsiBytesAsStrings, string(rune(int('0')+int(lowNybble))))
 		} else {
-			imsiBytesAsStrings[i-1] = byteAsString
+			imsiBytesAsStrings = append(imsiBytesAsStrings, string(rune(int('0')+int(lowNybble)))+string(rune(int('0')+int(highNybble))))
 		}
 	}
 
-	return strings.Join(imsiBytesAsStrings, "")
+	imsi := &TypedIMSI{
+		AsString: strings.Join(imsiBytesAsStrings, ""),
+	}
+
+	return imsi, nil
 }

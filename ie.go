@@ -608,3 +608,21 @@ func makeTypedIMSI(fromIE *IE) (*TypedIMSI, error) {
 
 	return imsi, nil
 }
+
+func ExtractGroupedIEsFrom(groupedIE *IE) ([]*IE, error) {
+	remainingGroupedData := groupedIE.Data
+
+	extractedIEs := make([]*IE, 0, 10)
+
+	for len(remainingGroupedData) > 0 {
+		nextIE, err := DecodeIE(remainingGroupedData)
+		if err != nil {
+			return nil, err
+		}
+
+		extractedIEs = append(extractedIEs, nextIE)
+		remainingGroupedData = remainingGroupedData[nextIE.TotalLength:]
+	}
+
+	return extractedIEs, nil
+}

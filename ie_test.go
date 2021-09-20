@@ -269,6 +269,25 @@ func TestGroupIECreation(t *testing.T) {
 			87, 0x83, 0x01, 0x02, 0x03, 0x44, 0x01, 0x02, 0x03, 0x04,
 		}, ie.Data)
 	}
+
+	extractedIEs, err := ExtractGroupedIEsFrom(ie)
+	if err != nil {
+		t.Errorf("[TestGroupIECreation] Failed to re-extract grouped IEs: %s", err.Error())
+	} else {
+		if len(extractedIEs) != 3 {
+			t.Errorf("[TestGroupIECreation] On re-extract of grouped IEs, expected 3 IEs, got = %d", len(extractedIEs))
+		} else {
+			if extractedIEs[0].Type != EBI {
+				t.Errorf("[TestGroupIECreation] On re-extract of grouped IEs, expected type of ie[0] to be EBI, got = %s", NameOfIEForType(extractedIEs[0].Type))
+			}
+			if extractedIEs[1].Type != FTEID {
+				t.Errorf("[TestGroupIECreation] On re-extract of grouped IEs, expected type of ie[1] to be FTEID, got = %s", NameOfIEForType(extractedIEs[0].Type))
+			}
+			if extractedIEs[2].Type != FTEID {
+				t.Errorf("[TestGroupIECreation] On re-extract of grouped IEs, expected type of ie[2] to be FTEID, got = %s", NameOfIEForType(extractedIEs[0].Type))
+			}
+		}
+	}
 }
 
 func compareByteArrays(expected []byte, got []byte) error {
